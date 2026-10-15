@@ -1,0 +1,68 @@
+# Revisão de segurança
+
+Revisão de 15 de outubro de 2026. Escopo: código local, dependências, API com
+PostgreSQL e interface no Chrome. Não foi realizado teste contra uma hospedagem pública.
+
+## Correções aplicadas
+
+| Problema | Correção |
+|---|---|
+| Bibliotecas Java antigas | Jackson atualizado para 2.18.11 e pgJDBC para 42.7.14. |
+| Login sem limite | Limites por IP e por hash do email; resposta 429 com Retry-After. |
+| Custo de autenticação sem controle | Até 4 autenticações e 24 requisições da API simultâneas. |
+| Conexões e consultas sem limites completos | Limites de conexão, cabeçalhos, leitura HTTP, consultas e espera por locks. |
+| API usando o administrador do banco local | Conta habit_tracker_app sem superuser, createdb ou createrole. |
+| Configuração de cookie insegura em HTTPS | Origem validada na inicialização e exigência de Secure em HTTPS. |
+| JSON ambíguo | Rejeição de campos duplicados, conteúdo após o objeto, corpos acima de 16 KiB e caracteres de controle em campos textuais. |
+| Credenciais locais herdando permissões da pasta | Arquivo local restrito ao usuário atual no Windows; proteção no gitignore. |
+| Classpath podia incluir jars antigos | Inicialização usa a lista exata de dependências resolvidas pelo Maven. |
+| Erros de conexão ocultados na interface | Tela de erro com tentativa novamente; dados antigos ficam indisponíveis se a atualização após salvar falhar. |
+
+O cadastro exige senhas de 15 a 128 caracteres. O login preserva compatibilidade
+com contas anteriores de pelo menos 8 caracteres. Senhas usam PBKDF2-HMAC-SHA256,
+600 mil iterações e salt aleatório individual. Tokens de sessão têm 32 bytes
+aleatórios e são armazenados como hashes SHA-256. Os cookies são HttpOnly e
+SameSite=Strict; o servidor compara Origin em mutações quando enviado e rejeita
+Sec-Fetch-Site cross-site. Não há tokens no localStorage.
+
+## Verificações
+
+- 8 testes Java: datas, anos bissextos, senhas, limites e configuração dos cookies.
+- 5 testes do cliente HTTP: credenciais, respostas inválidas, status, timeout e cancelamento.
+- Testes da API: isolamento entre contas, marcação única, datas, período, ordem, humor, histórico e exclusão.
+- Testes de segurança: CSRF, cookies, JSON, tamanho do corpo, senha, SQL como texto literal e bloqueio de tentativas.
+- Chrome: cadastro, HTML malicioso exibido como texto, edição com conflito, humor, recuperação de falhas, modal, exclusão e logout.
+- Inspeção visual em desktop e celular, com navegação da tabela por rolagem.
+- Build de produção carregado no Chrome sem violações de CSP, com as três fontes locais.
+- Auditoria pnpm: nenhum aviso conhecido retornado para o lockfile revisado.
+- Consulta OSV das 5 dependências Java de execução atualizadas: nenhum aviso retornado.
+
+## Referências das correções
+
+As versões anteriores do driver constam nos [avisos do pgJDBC](https://jdbc.postgresql.org/security/).
+Jackson tem uma [correção de negação de serviço em 2.18.11](https://github.com/FasterXML/jackson-databind/security/advisories/GHSA-cxp5-3px4-pw24).
+A presença de uma versão em um aviso não significa que todos os caminhos afetados
+estavam expostos neste aplicativo; a atualização remove essa dependência de configuração.
+
+O armazenamento de senhas segue os parâmetros de PBKDF2 da
+[OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+Os controles de autenticação consideram o
+[guia de autenticação](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html).
+
+## Limites desta revisão
+
+Ausência de avisos em scanners não garante ausência de vulnerabilidades. Os limites
+de tentativas estão na memória de uma instância, reiniciam com o processo e usam o IP
+da conexão, sem confiar em X-Forwarded-For. Atrás de um proxy, o limite por IP pode
+agrupar usuários; uma implantação pública precisa de limitação compartilhada no proxy
+ou banco e de uma configuração explícita de proxies confiáveis.
+
+HTTPS, proxy, backups, recuperação de senha, confirmação de email e várias instâncias
+não foram validados como uma implantação de produção. A conta administrativa do
+cluster local é exclusiva do script de preparação; ela não deve ser usada pela API.
+
+O build aplica CSP com scripts, fontes e conexões da própria origem. Estilos inline
+são permitidos para as medidas dinâmicas da grade. frame-ancestors e outros cabeçalhos
+precisam acompanhar os arquivos no servidor definitivo, como descrito no README.
+
+A revisão foi concluída antes do primeiro commit.
