@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Limites por janela para a instância local, com memória limitada e relógio testável. */
 public final class RateLimiter {
     private record Bucket(int attempts, long expiresAt) {}
     private final Map<String, Bucket> buckets = new HashMap<>();

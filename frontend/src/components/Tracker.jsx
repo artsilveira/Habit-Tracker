@@ -31,8 +31,8 @@ export default function Tracker({ user, onLogout }) {
       month: '2-digit',
     }).formatToParts(new Date());
     return new Date(
-      Number(parts.find((p) => p.type === 'year').value),
-      Number(parts.find((p) => p.type === 'month').value) - 1,
+      Number(parts.find((part) => part.type === 'year').value),
+      Number(parts.find((part) => part.type === 'month').value) - 1,
       1,
     );
   });
@@ -66,10 +66,10 @@ export default function Tracker({ user, onLogout }) {
     setError('');
     setData(null);
     load(controller.signal)
-      .catch((e) => {
-        if (e.name !== 'AbortError') {
-          if (e.status === 401) onLogout();
-          else setError(e.message);
+      .catch((requestError) => {
+        if (requestError.name !== 'AbortError') {
+          if (requestError.status === 401) onLogout();
+          else setError(requestError.message);
         }
       })
       .finally(() => {
@@ -88,13 +88,13 @@ export default function Tracker({ user, onLogout }) {
       saved = true;
       close();
       await load();
-    } catch (e) {
-      if (e.status === 401) onLogout();
+    } catch (requestError) {
+      if (requestError.status === 401) onLogout();
       else {
         setError(
           saved
             ? 'Alteração salva, mas não foi possível atualizar a tabela. Clique em tentar novamente.'
-            : e.message,
+            : requestError.message,
         );
         if (saved) setData(null);
       }
@@ -107,10 +107,10 @@ export default function Tracker({ user, onLogout }) {
       setMonth(new Date(month.getFullYear(), month.getMonth() + offset, 1));
   }
   function chooseEntry(status) {
-    const current = entry;
+    const selectedEntry = entry;
     mutate(
       () =>
-        api(`/habits/${current.habit.id}/entries/${current.date}`, {
+        api(`/habits/${selectedEntry.habit.id}/entries/${selectedEntry.date}`, {
           method: status ? 'PUT' : 'DELETE',
           ...(status ? { body: { status } } : {}),
         }),
@@ -149,8 +149,8 @@ export default function Tracker({ user, onLogout }) {
               try {
                 await api('/auth/logout', { method: 'POST' });
                 onLogout();
-              } catch (e) {
-                setError(e.message);
+              } catch (requestError) {
+                setError(requestError.message);
                 setBusy(false);
               }
             }}
@@ -219,10 +219,15 @@ export default function Tracker({ user, onLogout }) {
                 max="9999-12"
                 value={selectedMonth}
                 disabled={busy}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    const [y, m] = e.target.value.split('-').map(Number);
-                    if (y >= 1900 && y <= 9999) setMonth(new Date(y, m - 1, 1));
+                onChange={(event) => {
+                  if (event.target.value) {
+                    const [selectedYear, selectedMonthNumber] =
+                      event.target.value.split('-').map(Number);
+                    if (selectedYear >= 1900 && selectedYear <= 9999) {
+                      setMonth(
+                        new Date(selectedYear, selectedMonthNumber - 1, 1),
+                      );
+                    }
                   }
                 }}
               />
@@ -249,7 +254,7 @@ export default function Tracker({ user, onLogout }) {
               <button
                 className="text-button"
                 disabled={busy}
-                onClick={() => setRetry((r) => r + 1)}
+                onClick={() => setRetry((attempt) => attempt + 1)}
               >
                 Tentar novamente
               </button>
@@ -335,7 +340,7 @@ export default function Tracker({ user, onLogout }) {
                   modal.index + direction >= data.habits.length
                 }
                 onClick={() => {
-                  const ids = data.habits.map((h) => h.id);
+                  const ids = data.habits.map((habit) => habit.id);
                   [ids[modal.index], ids[modal.index + direction]] = [
                     ids[modal.index + direction],
                     ids[modal.index],
@@ -459,18 +464,18 @@ export default function Tracker({ user, onLogout }) {
             esta data.
           </p>
           <div className="space-y-2">
-            {moodNames.map((m, i) => (
+            {moodNames.map((moodName, index) => (
               <button
-                key={m}
+                key={moodName}
                 disabled={busy}
-                className={`choice ${data.moods[moodDate] === i + 1 ? 'selected' : ''}`}
-                onClick={() => chooseMood(i + 1)}
+                className={`choice ${data.moods[moodDate] === index + 1 ? 'selected' : ''}`}
+                onClick={() => chooseMood(index + 1)}
               >
                 <span className="flex items-center gap-3">
-                  <span className="text-2xl">{moodFaces[i]}</span>
-                  {m}
+                  <span className="text-2xl">{moodFaces[index]}</span>
+                  {moodName}
                 </span>
-                {data.moods[moodDate] === i + 1 && <Check size={17} />}
+                {data.moods[moodDate] === index + 1 && <Check size={17} />}
               </button>
             ))}
             <button

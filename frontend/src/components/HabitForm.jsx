@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import Modal from './Modal.jsx';
+
 export default function HabitForm({
   habit,
   today,
@@ -16,11 +17,11 @@ export default function HabitForm({
       busy={busy}
     >
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const b = Object.fromEntries(new FormData(e.currentTarget));
-          if (habit) b.endDate ||= null;
-          onSave(b);
+        onSubmit={(event) => {
+          event.preventDefault();
+          const values = Object.fromEntries(new FormData(event.currentTarget));
+          if (habit) values.endDate ||= null;
+          onSave(values);
         }}
       >
         <fieldset disabled={busy} className="space-y-5">

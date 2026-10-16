@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-/** Serve somente o build do frontend, nunca o diretório do projeto. */
 public final class StaticHandler implements HttpHandler {
     private static final String POLICY = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
             + "font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; "

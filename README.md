@@ -1,7 +1,5 @@
 # Habit Tracker
 
-**BRICK BY BRICK, DAY BY DAY.**
-
 **[Acessar a aplicação](https://habit-tracker-mbfr.onrender.com)** · Render Free + Neon
 
 Aplicação full stack para acompanhar hábitos e registrar o humor ao longo do mês. A ideia nasceu de um habit tracker físico: cada linha representa um hábito, cada coluna representa um dia, e um gráfico abaixo da tabela mostra os registros de humor.
@@ -62,11 +60,16 @@ flowchart LR
 
 - JDK **21 ou superior** e Maven **3.9 ou superior**.
 - Node.js **22 ou superior**.
-- **pnpm 11+** ou npm.
+- **pnpm 11+**.
 - PostgreSQL com `psql`, `initdb` e `pg_ctl` disponíveis no `PATH`.
 - PowerShell **7** para utilizar os scripts de desenvolvimento e testes HTTP.
 
-Os comandos abaixo devem ser executados a partir da raiz do repositório, após cloná-lo.
+Clone o repositório e execute os comandos a partir da raiz:
+
+```powershell
+git clone https://github.com/artsilveira/Habit-Tracker.git
+cd Habit-Tracker
+```
 
 ### 1. Instalar as dependências do frontend
 
@@ -76,7 +79,7 @@ pnpm install --frozen-lockfile
 cd ..
 ```
 
-Também é possível usar `npm install` na pasta `frontend`. O lockfile versionado no projeto é o `pnpm-lock.yaml`.
+O projeto utiliza o `pnpm-lock.yaml` para manter as versões das dependências reproduzíveis.
 
 ### 2. Iniciar o banco e o backend
 
@@ -201,8 +204,6 @@ pnpm format:check
 pnpm build
 ```
 
-Os mesmos scripts podem ser executados com `npm test` e `npm run <script>`.
-
 **Integração e segurança da API**, a partir da raiz, com banco e backend em execução:
 
 ```powershell
@@ -228,11 +229,11 @@ Prefixo: `/api`. As requisições e respostas utilizam JSON; as datas seguem `YY
 
 As rotas de hábitos, marcações, humor e consulta mensal exigem uma sessão autenticada. Respostas de erro incluem `code` e `message`.
 
-## Segurança e estado do projeto
+## Segurança e limitações
 
-O MVP permite acompanhar hábitos e humor com contas separadas. A aplicação utiliza senhas com hash e salt individual, cookies HttpOnly e SameSite, validação de origem, limites de autenticação e consultas SQL parametrizadas. O servidor dos arquivos de produção aplica uma Content Security Policy e bloqueia caminhos fora do build.
+A aplicação utiliza senhas com hash e salt individual, cookies HttpOnly e SameSite, validação de origem, limites de autenticação e consultas SQL parametrizadas. O servidor dos arquivos de produção aplica uma Content Security Policy e bloqueia caminhos fora do build.
 
-A configuração do Render exige HTTPS e cookies seguros. Os limites de autenticação no Render são globais por instância e por conta, sem confiar em cabeçalhos de IP do visitante. Recuperação de senha, confirmação de email e limites compartilhados entre instâncias ainda não estão implementados. Os controles e os limites da revisão estão documentados em [`SECURITY.md`](SECURITY.md).
+A configuração do Render exige HTTPS e cookies seguros. Os limites de autenticação no Render são globais por instância e por conta, sem confiar em cabeçalhos de IP do visitante. Recuperação de senha, confirmação de email e limites compartilhados entre instâncias ainda não estão implementados. Os controles e suas limitações estão documentados em [`SECURITY.md`](SECURITY.md).
 
 ## Identidade visual
 

@@ -32,7 +32,6 @@ public record AppConfig(int port, String host, String databaseUrl, String databa
     }
 
     private static AppConfig fromConnectionString(int port, String host, Path frontend, String value) {
-        // Neon fornece uma URI PostgreSQL; o driver Java precisa de uma URL JDBC.
         // Não incluir a URI original em exceções: ela contém a senha.
         try {
             URI uri = URI.create(value);

@@ -8,7 +8,6 @@
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
-/* Retrô: papel, vinho e mostarda. Tokens compartilhados por toda a interface. */
 :root {
   --ink: #352a27;
   --canvas: #eee2cb;
@@ -873,7 +872,6 @@ input::placeholder {
   margin-top: 12px;
 }
 
-/* Tipografia de almanaque e detalhes de impressão. */
 body {
   margin: 0;
   background-image: radial-gradient(#a4804420 0.6px, transparent 0.6px);

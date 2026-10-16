@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
+
 export default function Modal({
   title,
   onClose,
@@ -7,32 +8,32 @@ export default function Modal({
   error,
   busy = false,
 }) {
-  const ref = useRef(null);
+  const dialogRef = useRef(null);
   const titleId = useId();
   useEffect(() => {
-    const dialog = ref.current;
+    const dialog = dialogRef.current;
     dialog.showModal();
     return () => dialog.close();
   }, []);
   return (
     <dialog
-      ref={ref}
+      ref={dialogRef}
       className="modal"
       aria-labelledby={titleId}
       aria-busy={busy}
-      onCancel={(e) => {
-        e.preventDefault();
+      onCancel={(event) => {
+        event.preventDefault();
         if (!busy) onClose();
       }}
-      onClick={(e) => {
-        const bounds = ref.current.getBoundingClientRect();
+      onClick={(event) => {
+        const bounds = dialogRef.current.getBoundingClientRect();
         if (
           !busy &&
-          e.target === ref.current &&
-          (e.clientX < bounds.left ||
-            e.clientX > bounds.right ||
-            e.clientY < bounds.top ||
-            e.clientY > bounds.bottom)
+          event.target === dialogRef.current &&
+          (event.clientX < bounds.left ||
+            event.clientX > bounds.right ||
+            event.clientY < bounds.top ||
+            event.clientY > bounds.bottom)
         )
           onClose();
       }}

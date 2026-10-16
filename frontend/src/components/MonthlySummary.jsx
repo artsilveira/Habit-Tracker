@@ -1,8 +1,10 @@
 import { BookOpen, Check, ChartNoAxesCombined, Smile } from 'lucide-react';
 
 export default function MonthlySummary({ data }) {
-  const total = data?.habits.reduce((n, h) => n + h.eligibleDays, 0) || 0;
-  const completed = data?.habits.reduce((n, h) => n + h.completed, 0) || 0;
+  const eligibleDays =
+    data?.habits.reduce((total, habit) => total + habit.eligibleDays, 0) || 0;
+  const completed =
+    data?.habits.reduce((total, habit) => total + habit.completed, 0) || 0;
   const moodCount = Object.keys(data?.moods || {}).length;
 
   return (
@@ -38,7 +40,9 @@ export default function MonthlySummary({ data }) {
         <div>
           <span className="summary-label">CONCLUSÃO DO MÊS</span>
           <strong>
-            {total ? `${Math.round((completed / total) * 100)}%` : '—'}
+            {eligibleDays
+              ? `${Math.round((completed / eligibleDays) * 100)}%`
+              : '—'}
             <small>dos dias previstos até hoje</small>
           </strong>
         </div>

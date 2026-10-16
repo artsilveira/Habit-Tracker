@@ -13,8 +13,8 @@ export default function MonthGrid({
   onMood,
 }) {
   const dates = data
-    ? Array.from({ length: data.daysInMonth }, (_, i) =>
-        dateKey(data.year, data.month, i + 1),
+    ? Array.from({ length: data.daysInMonth }, (_, dayIndex) =>
+        dateKey(data.year, data.month, dayIndex + 1),
       )
     : [];
 
@@ -27,21 +27,21 @@ export default function MonthGrid({
               <th className="habit-name-head">
                 HÁBITOS <span>DIARIAMENTE</span>
               </th>
-              {dates.map((date, i) => {
-                const d = new Date(data.year, data.month - 1, i + 1);
+              {dates.map((date, dayIndex) => {
+                const day = new Date(data.year, data.month - 1, dayIndex + 1);
                 return (
                   <th
                     key={date}
-                    className={`${date === data.today ? 'today-head' : ''} ${[0, 6].includes(d.getDay()) ? 'weekend' : ''}`}
+                    className={`${date === data.today ? 'today-head' : ''} ${[0, 6].includes(day.getDay()) ? 'weekend' : ''}`}
                   >
                     <span>
-                      {d
+                      {day
                         .toLocaleDateString('pt-BR', {
                           weekday: 'short',
                         })
                         .slice(0, 1)}
                     </span>
-                    <strong>{i + 1}</strong>
+                    <strong>{dayIndex + 1}</strong>
                     {date === data.today && <i />}
                   </th>
                 );

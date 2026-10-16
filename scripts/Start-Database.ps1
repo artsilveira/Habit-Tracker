@@ -62,7 +62,6 @@ try {
         & (Join-Path $PostgresBin 'psql.exe') -h 127.0.0.1 -p $Port -U habit_tracker -d habit_tracker -v ON_ERROR_STOP=1 -f (Join-Path $projectRoot 'database/migrations/001_initial_schema.sql')
         if ($LASTEXITCODE -ne 0) { throw 'Falha ao aplicar a migracao.' }
     }
-    # A API não usa a conta administrativa que cria o cluster e as tabelas.
     $sqlPassword = $localConfig.appPassword.Replace("'", "''")
     $roleSql = @"
 SELECT format('CREATE ROLE habit_tracker_app LOGIN PASSWORD %L', '$sqlPassword')

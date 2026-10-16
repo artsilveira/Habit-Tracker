@@ -1,96 +1,52 @@
-# Revisão de segurança
+# Segurança
 
-Revisão de 15 de outubro de 2026, com preparação de deploy em 16 de outubro de 2026. Escopo: código local, dependências, API com
-PostgreSQL e interface no Chrome. Não foi realizado teste contra uma hospedagem pública.
+Este documento descreve os controles da aplicação e suas limitações. Os comandos para executar as verificações estão no [README](README.md#testes-e-build).
 
-## Correções aplicadas
+## Autenticação e sessões
 
-| Problema | Correção |
-|---|---|
-| Bibliotecas Java antigas | Jackson atualizado para 2.18.11 e pgJDBC para 42.7.14. |
-| Login sem limite | Limites por IP e por hash do email; resposta 429 com Retry-After. |
-| Custo de autenticação sem controle | Até 4 autenticações e 24 requisições da API simultâneas. |
-| Conexões e consultas sem limites completos | Limites de conexão, cabeçalhos, leitura HTTP, consultas e espera por locks. |
-| API usando o administrador do banco local | Conta habit_tracker_app sem superuser, createdb ou createrole. |
-| Configuração de cookie insegura em HTTPS | Origem validada na inicialização e exigência de Secure em HTTPS. |
-| JSON ambíguo | Rejeição de campos duplicados, conteúdo após o objeto, corpos acima de 16 KiB e caracteres de controle em campos textuais. |
-| Credenciais locais herdando permissões da pasta | Arquivo local restrito ao usuário atual no Windows; proteção no gitignore. |
-| Classpath podia incluir jars antigos | Inicialização usa a lista exata de dependências resolvidas pelo Maven. |
-| Erros de conexão ocultados na interface | Tela de erro com tentativa novamente; dados antigos ficam indisponíveis se a atualização após salvar falhar. |
+- Senhas são armazenadas com PBKDF2-HMAC-SHA256, 600 mil iterações e salt aleatório individual.
+- O cadastro exige de 15 a 128 caracteres. O login aceita senhas a partir de 8 caracteres para manter compatibilidade com contas anteriores.
+- Emails inexistentes também passam pela verificação de senha com um hash fictício pré-calculado.
+- A transação de leitura do login termina antes do cálculo de PBKDF2, evitando transações ociosas durante a verificação. Uma nova sessão só é gravada após validar a senha.
+- Tokens de sessão usam 32 bytes aleatórios. O banco armazena apenas seus hashes SHA-256.
+- As sessões expiram em sete dias, têm limite de dez por conta e são invalidadas no logout. Um novo login substitui o token anterior do navegador.
+- O cookie `habit_session` usa `HttpOnly`, `SameSite=Strict` e `Path=/api`. Origens HTTPS exigem `Secure`. Tokens não são armazenados no `localStorage`.
 
-O cadastro exige senhas de 15 a 128 caracteres. O login preserva compatibilidade
-com contas anteriores de pelo menos 8 caracteres. Senhas usam PBKDF2-HMAC-SHA256,
-600 mil iterações e salt aleatório individual. Tokens de sessão têm 32 bytes
-aleatórios e são armazenados como hashes SHA-256. Os cookies são HttpOnly e
-SameSite=Strict; o servidor compara Origin em mutações quando enviado e rejeita
-Sec-Fetch-Site cross-site. Não há tokens no localStorage.
+## Proteção das requisições
 
-## Verificações
+Mutações verificam o cabeçalho `Origin` quando presente e rejeitam `Sec-Fetch-Site: cross-site`. O parser aceita apenas objetos JSON, rejeita campos duplicados e conteúdo extra, e limita o corpo a 16 KiB. Campos textuais têm limites de tamanho; os que usam a validação de texto também rejeitam caracteres de controle.
 
-- Testes Java: datas, anos bissextos, senhas, limites e configuração dos cookies.
-- 5 testes do cliente HTTP: credenciais, respostas inválidas, status, timeout e cancelamento.
-- Testes da API: isolamento entre contas, marcação única, datas, período, ordem, humor, histórico e exclusão.
-- Testes de segurança: CSRF, cookies, JSON, tamanho do corpo, senha, SQL como texto literal e bloqueio de tentativas.
-- Chrome: cadastro, HTML malicioso exibido como texto, edição com conflito, humor, recuperação de falhas, modal, exclusão e logout.
-- Inspeção visual em desktop e celular, com navegação da tabela por rolagem.
-- Build de produção carregado no Chrome sem violações de CSP, com as três fontes locais.
-- Auditoria pnpm: nenhum aviso conhecido retornado para o lockfile revisado.
-- Consulta OSV das 5 dependências Java de execução atualizadas: nenhum aviso retornado.
+A API limita a concorrência a 24 requisições e quatro autenticações. A autenticação tem janelas de 15 minutos e retorna `429` com `Retry-After` ao exceder a cota:
 
-Na preparação de deploy de 16 de outubro, o Maven executou 17 testes: 16 passaram
-e um teste de symlink foi pulado por restrição do Windows. A suíte cobre também
-arquivos estáticos, travessia de diretórios, configuração da URI do Neon, origem do
-Render, limites atrás de proxy e liveness sem banco. Os 5 testes do cliente HTTP,
-o formatador, o build React e os testes HTTP de integração e segurança passaram.
-O Chrome validou o build servido pelo Java com PostgreSQL local, incluindo hábito,
-marcação, humor, persistência, logout/login, fontes locais e CSP.
+| Ambiente | Cota de origem | Cota por conta |
+| --- | --- | --- |
+| Conexão direta | 10 cadastros ou 30 logins por IP | 10 tentativas por hash do email |
+| Render | 30 cadastros ou 120 logins por instância | 10 tentativas por hash do email |
 
-A imagem Docker foi construída no Render em 16 de outubro, com os 17 testes Java
-aprovados no Linux, incluindo o teste de symlink. A interface respondeu por HTTPS
-e a conectividade pública com o Neon foi confirmada. O log de configuração
-registra apenas origem, host, banco e indicadores de espaços ou aspas nas extremidades
-das credenciais. Não registra usuário, senha ou a URL completa.
+No Render, o IP da conexão pertence ao proxy. A aplicação usa uma cota por instância e não confia em `X-Forwarded-For` enviado pelo visitante. Os limites ficam em memória, reiniciam com o processo e não são compartilhados entre instâncias. Um visitante pode consumir a cota global.
 
-O login encerra a transação de leitura antes de verificar a senha com PBKDF2,
-preservando o limite de transações ociosas mesmo em CPUs limitadas. O hash fictício
-para emails desconhecidos é pré-calculado; cada verificação continua usando
-600 mil iterações. A criação da sessão ocorre somente após autenticação válida.
+## Banco de dados
 
-## Referências das correções
+O acesso usa consultas parametrizadas. Hábitos, marcações e humor são consultados no contexto do usuário autenticado. Alterações são transacionais; a ordem dos bloqueios de usuário e hábito evita deadlocks entre edição, exclusão e reordenação. A consulta mensal usa um snapshot consistente.
 
-As versões anteriores do driver constam nos [avisos do pgJDBC](https://jdbc.postgresql.org/security/).
-Jackson tem uma [correção de negação de serviço em 2.18.11](https://github.com/FasterXML/jackson-databind/security/advisories/GHSA-cxp5-3px4-pw24).
-A presença de uma versão em um aviso não significa que todos os caminhos afetados
-estavam expostos neste aplicativo; a atualização remove essa dependência de configuração.
+As conexões têm timeout de dez segundos e leitura de quinze segundos. Consultas têm limite de cinco segundos, espera por bloqueio de dois segundos e transações ociosas de dez segundos. A API utiliza uma conta sem privilégios administrativos; a criação do esquema fica a cargo de uma conta separada.
 
-O armazenamento de senhas segue os parâmetros de PBKDF2 da
-[OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
-Os controles de autenticação consideram o
-[guia de autenticação](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html).
+`DATABASE_URL` exige TLS com validação de certificado e hostname. A senha é separada da URL JDBC, e erros não incluem a URI original. Na configuração por `DB_*`, o TLS deve ser definido em `DB_URL`, conforme o [guia de deploy](docs/DEPLOY.md#alternativa-conexão-em-variáveis-separadas).
 
-## Limites desta revisão
+Os logs de diagnóstico mostram host, banco, origem da configuração e indicadores de espaços ou aspas nas credenciais. Eles não registram usuário, senha ou a URL completa. Arquivos locais de credenciais são ignorados pelo Git e pelo contexto do Docker.
 
-Ausência de avisos em scanners não garante ausência de vulnerabilidades. Os limites
-de tentativas estão na memória de uma instância e reiniciam com o processo. Localmente
-usam o IP da conexão e o hash do email. No Render, usam uma cota global por instância
-(30 cadastros ou 120 logins a cada 15 minutos) e 10 tentativas por conta no mesmo período.
-Não confiam em X-Forwarded-For. Um visitante pode consumir a cota compartilhada;
-uso com mais tráfego exige limitação de abuso compartilhada no proxy ou banco.
+## Interface e arquivos estáticos
 
-HTTPS público, proxy, backups e várias instâncias não foram validados em uma
-hospedagem pública. Recuperação de senha e confirmação de email não estão implementadas. A conta administrativa do
-cluster local é exclusiva do script de preparação; ela não deve ser usada pela API.
+O React renderiza os textos dos usuários sem inserir HTML bruto. O servidor de produção serve apenas o diretório do build e rejeita travessia de diretórios, arquivos ocultos e links simbólicos que apontem para fora dele.
 
-O servidor Java de arquivos estáticos aplica CSP com scripts, fontes e conexões da
-própria origem, frame-ancestors 'none', X-Frame-Options e nosniff. Estilos inline são
-permitidos para as medidas dinâmicas da grade. O handler serve apenas o diretório
-do build e rejeita travessia de diretórios, arquivos ocultos e symlinks externos.
+A Content Security Policy restringe scripts, fontes e conexões à própria origem e bloqueia objetos e enquadramento da página. Estilos inline são permitidos para dimensões dinâmicas da grade e do gráfico. As respostas também usam `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`. O contêiner executa com usuário sem privilégios administrativos.
 
-A configuração DATABASE_URL do Neon exige TLS com certificado e hostname validados
-pelo pgJDBC e separa a senha da URL JDBC. Erros de configuração não exibem a URI
-com credenciais. O contêiner roda com UID sem privilégios administrativos; arquivos
-locais de credenciais não entram no contexto de build. A conta SQL do Neon deve
-ser criada sem privilégios administrativos conforme o [guia de deploy](docs/DEPLOY.md).
+`/api/health/live` verifica apenas o processo. `/api/health` verifica a conectividade com o banco; um processo disponível não garante que o banco esteja acessível ou que a migração tenha sido aplicada.
 
-A sondagem /api/health/live não consulta o banco; /api/health é a verificação de
-conectividade. Um processo saudável não garante que a migração ou a conexão estejam corretas.
+## Verificação e limitações
+
+Os testes Java cobrem datas, senhas, limites de autenticação, configuração, cabeçalhos e arquivos estáticos. Os testes do cliente HTTP cobrem credenciais, erros, timeout e cancelamento. Os scripts de integração verificam isolamento entre contas, persistência, regras de negócio, cookies, validação de origem, JSON e bloqueio de tentativas.
+
+Os scripts HTTP criam contas temporárias e devem ser executados somente no banco de desenvolvimento. Com `DB_*` e `psql` disponíveis, eles removem essas contas ao final.
+
+Recuperação de senha, confirmação de email e limitação compartilhada de abuso ainda não estão implementadas. Backups e recuperação do banco dependem da configuração da hospedagem. A suíte automatizada não equivale a uma auditoria de segurança independente.

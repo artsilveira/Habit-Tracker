@@ -4,16 +4,14 @@ import { api } from '../api.js';
 import Brand from './Brand.jsx';
 import Footer from './Footer.jsx';
 import BonfireIcon from './BonfireIcon.jsx';
+
 export default function Auth({ onLogin }) {
   const [register, setRegister] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event) {
-    if (busy) {
-      event.preventDefault();
-      return;
-    }
     event.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError('');
     const values = Object.fromEntries(new FormData(event.currentTarget));
@@ -25,8 +23,8 @@ export default function Auth({ onLogin }) {
           body: values,
         }),
       );
-    } catch (e) {
-      setError(e.message);
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
       setBusy(false);
     }
@@ -60,16 +58,16 @@ export default function Auth({ onLogin }) {
             </div>
             <div className="mini-grid">
               <span>MEUS HÁBITOS</span>
-              {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                <span key={d}>{d}</span>
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <span key={day}>{day}</span>
               ))}
               {['Ler algumas páginas', 'Treinar', 'Estudar Java'].map(
-                (h, i) => (
-                  <div className="contents" key={h}>
-                    <span>{h}</span>
-                    {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                      <span className={d > 5 ? '' : 'mini-mark'} key={d}>
-                        {d > 5 ? '' : (i + d) % 4 ? '✓' : '·'}
+                (habitName, habitIndex) => (
+                  <div className="contents" key={habitName}>
+                    <span>{habitName}</span>
+                    {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                      <span className={day > 5 ? '' : 'mini-mark'} key={day}>
+                        {day > 5 ? '' : (habitIndex + day) % 4 ? '✓' : '·'}
                       </span>
                     ))}
                   </div>

@@ -43,7 +43,7 @@ Com as alterações deste projeto publicadas na branch `main`:
 3. Preencha `DATABASE_URL` com a URI privada da etapa anterior e aplique o Blueprint.
 4. Aguarde o build e a implantação. A URL pública será exibida pelo Render, no formato `https://NOME.onrender.com`.
 
-Se o serviço já foi criado pela integração do Render, use **Associate existing services** ao configurar o Blueprint. Isso associa a configuração ao serviço existente. Não é necessário criar um segundo serviço.
+Para um serviço já existente, selecione **Associate existing services** ao configurar o Blueprint.
 
 Também é possível iniciar pelo botão [Deploy to Render](https://render.com/deploy?repo=https://github.com/artsilveira/Habit-Tracker).
 
@@ -61,7 +61,7 @@ Também é possível configurar `DB_URL`, `DB_USER` e `DB_PASSWORD` diretamente 
 
 Não é preciso codificar os caracteres da senha quando ela é informada em `DB_PASSWORD`. Salve as alterações com deploy para o processo receber os novos valores.
 
-O log de inicialização mostra a origem da configuração, o host e o banco, e sinaliza espaços ou aspas nas extremidades das credenciais. Não mostra usuário, senha, parâmetros da URL ou a URL completa. O código `28P01` indica rejeição da autenticação; confira também a branch, o login da role e o roteamento antes de concluir que é necessário redefinir a senha.
+O log de inicialização mostra a origem da configuração, o host e o banco, e sinaliza espaços ou aspas nas extremidades das credenciais. Não mostra usuário, senha ou a URL completa.
 
 O esquema SQL não é aplicado durante o build ou a inicialização. Isso evita alterações automáticas no banco a cada deploy. Migrações futuras precisam ser executadas conscientemente com a conta proprietária; novas tabelas também precisam dos grants da conta da aplicação.
 
@@ -77,7 +77,7 @@ Os scripts `Test-Api.ps1` e `Test-Security.ps1` são para o banco de desenvolvim
 
 ## Limites do plano gratuito
 
-O serviço gratuito do Render suspende após 15 minutos sem tráfego. A primeira visita após a suspensão pode demorar cerca de um minuto. O workspace recebe 750 horas gratuitas por mês, compartilhadas entre seus serviços gratuitos. Veja os [limites do Render Free](https://render.com/docs/free).
+O serviço gratuito do Render pode suspender por inatividade, aumentando o tempo da primeira resposta. As cotas são compartilhadas entre os serviços gratuitos do workspace. Consulte os valores vigentes nos [limites do Render Free](https://render.com/docs/free).
 
 O Neon Free tem cotas de armazenamento e computação e suspende o compute ocioso. Confira os valores vigentes no [plano do Neon](https://neon.com/pricing). A sondagem de liveness separada evita despertar o banco a cada verificação do Render.
 

@@ -43,7 +43,6 @@ CREATE TABLE mood_entries (
     UNIQUE (user_id, entry_date)
 );
 
--- Infraestrutura para as futuras sessoes por cookie HttpOnly.
 -- Armazenar apenas o hash do token; o token original fica no cookie.
 CREATE TABLE user_sessions (
     token_hash VARCHAR(64) PRIMARY KEY CHECK (token_hash ~ '^[0-9a-f]{64}$'),

@@ -1,4 +1,3 @@
-/** Espada na fogueira: silhueta simplificada para os pequenos detalhes do caderno. */
 export default function BonfireIcon({ size = 22 }) {
   return (
     <svg
