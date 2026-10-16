@@ -1,75 +1,127 @@
 # Habit Tracker
 
-Habit tracker mensal com registro de humor, inspirado em uma tabela de papel.
-React e Tailwind CSS no frontend; Java sem framework e PostgreSQL no backend.
+**BRICK BY BRICK, DAY BY DAY.**
 
-## Executar localmente
+Aplicação full stack para acompanhar hábitos e registrar o humor ao longo do mês. A ideia nasceu de um habit tracker físico: cada linha representa um hábito, cada coluna representa um dia, e um gráfico abaixo da tabela mostra os registros de humor.
 
-Requisitos: JDK 21+, Maven 3.9+, PostgreSQL com psql/initdb/pg_ctl no PATH,
-Node.js 22+ e npm ou pnpm. Os scripts usam PowerShell 7.
+O projeto reúne **React, Tailwind CSS, Java sem framework e PostgreSQL**, com uma identidade visual inspirada em papel, tons de vinho e mostarda e um ícone de bonfire.
 
-No primeiro terminal, a partir da raiz do projeto:
+![React 19](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
+![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Java 21+](https://img.shields.io/badge/Java-21%2B-B07219)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+
+## Funcionalidades
+
+- Cadastro, login e logout com sessão por cookie.
+- Criação, edição, ordenação e encerramento de hábitos diários.
+- Tabela mensal com navegação entre meses e anos.
+- Marcações de concluído, não realizado ou sem registro.
+- Histórico e percentual de conclusão por hábito.
+- Registro diário de humor em cinco níveis, com gráfico mensal.
+- Dados separados por usuário e validação das regras no backend.
+- Interface responsiva com rolagem horizontal na tabela.
+
+## Tecnologias
+
+| Camada | Tecnologias |
+| --- | --- |
+| Frontend | React 19, JavaScript, Tailwind CSS 4 e Vite 6 |
+| Backend | Java 21+, HttpServer do JDK, JDBC e Jackson |
+| Banco de dados | PostgreSQL e migrações SQL |
+| Autenticação | Cookies HttpOnly, tokens de sessão e PBKDF2-HMAC-SHA256 |
+| Testes | JUnit 5, Node.js Test Runner e testes HTTP em PowerShell |
+| Ferramentas | Maven, pnpm e Prettier |
+| Interface | Lucide React, SVG e fontes locais via Fontsource |
+
+### Java sem framework
+
+O backend utiliza o `HttpServer` do JDK. O roteamento, as validações, as sessões e as transações estão implementados diretamente no código Java. O acesso ao PostgreSQL usa JDBC com consultas parametrizadas, e o Jackson faz a leitura e a escrita de JSON.
+
+```mermaid
+flowchart LR
+    A[React + Tailwind CSS] -->|HTTP / JSON| B[API Java · HttpServer]
+    B -->|JDBC| C[(PostgreSQL)]
+```
+
+## Regras de negócio
+
+- Hábitos continuam nos meses seguintes até a data final de acompanhamento.
+- Cada hábito aceita apenas uma marcação por dia. Deixar uma célula vazia significa **sem registro**, não uma falha.
+- Datas futuras e dias fora do período do hábito ficam bloqueados.
+- Alterações de período que excluiriam marcações existentes são rejeitadas, preservando o histórico.
+- O progresso considera os dias previstos já decorridos, incluindo o dia atual. A data de hoje segue o fuso horário do usuário.
+- O humor é opcional e independente dos hábitos. Dias sem registro ficam sem ponto no gráfico.
+
+## Executando localmente
+
+### Pré-requisitos
+
+- JDK **21 ou superior** e Maven **3.9 ou superior**.
+- Node.js **22 ou superior**.
+- **pnpm 11+** ou npm.
+- PostgreSQL com `psql`, `initdb` e `pg_ctl` disponíveis no `PATH`.
+- PowerShell **7** para utilizar os scripts de desenvolvimento e testes HTTP.
+
+Os comandos abaixo devem ser executados a partir da raiz do repositório, após cloná-lo.
+
+### 1. Instalar as dependências do frontend
 
 ```powershell
-# Se o JDK não estiver no PATH, defina JAVA_HOME para sua instalação.
+cd frontend
+pnpm install --frozen-lockfile
+cd ..
+```
+
+Também é possível usar `npm install` na pasta `frontend`. O lockfile versionado no projeto é o `pnpm-lock.yaml`.
+
+### 2. Iniciar o banco e o backend
+
+No primeiro terminal:
+
+```powershell
 ./scripts/Start-Database.ps1
 ./scripts/Start-Backend.ps1
 ```
 
-Start-Database cria um cluster exclusivo em .tools/postgres-data, na porta 55432,
-restrito a 127.0.0.1. Não altera uma instalação PostgreSQL existente. Na primeira
-execução, cria as tabelas; nas seguintes, preserva os registros. A API usa a conta
-habit_tracker_app, sem privilégios administrativos. A conta habit_tracker é usada
-somente pelo script para criar o banco, o esquema e as permissões.
+O script prepara um PostgreSQL exclusivo do projeto em `.tools/postgres-data`, na porta **55432**, e aplica o esquema na primeira execução. Os dados são preservados entre reinicializações. A API utiliza uma conta sem privilégios administrativos.
 
-As senhas locais ficam em .tools/local-db.json, fora do versionamento e com acesso
-restrito ao usuário atual no Windows. Não copie .tools para um repositório ou hospedagem.
-O script define DB_URL, DB_USER e DB_PASSWORD no terminal atual.
+As variáveis de conexão são definidas no terminal pelo script. Execute os dois comandos na mesma sessão. O Maven resolve as dependências Java durante a inicialização do backend.
 
-Se os binários não estiverem no PATH, informe a pasta de instalação:
+Se os binários do PostgreSQL não estiverem no `PATH`, informe a pasta da sua instalação:
 
 ```powershell
 ./scripts/Start-Database.ps1 -PostgresBin 'C:\Program Files\PostgreSQL\18\bin'
 ```
 
-Start-Backend usa Maven no PATH ou a cópia local em .tools/apache-maven-3.9.11, caso
-ela exista. O Maven baixa as bibliotecas na primeira execução. Não há framework Java:
-o servidor usa HttpServer do JDK, JDBC e Jackson para JSON.
+### 3. Iniciar a interface
 
-No segundo terminal:
+Em outro terminal, na raiz do repositório:
 
 ```powershell
-cd frontend
-npm install
-npm run dev
+./scripts/Start-Frontend.ps1
 ```
 
-Também é possível usar pnpm install e pnpm dev. O lockfile versionado é do pnpm.
-Com as dependências já instaladas, também é possível iniciar pela raiz usando
-`./scripts/Start-Frontend.ps1`, sem precisar de npm no terminal.
-Abra **http://localhost:5173** e crie sua conta. Contas novas começam vazias.
-A API atende em localhost:8080, e o Vite encaminha as chamadas /api.
-Use localhost no navegador para corresponder à origem configurada.
+Acesse **[http://localhost:5173](http://localhost:5173)** e crie uma conta. A API atende em `http://localhost:8080`, e o Vite encaminha as requisições `/api` para ela.
 
-Ctrl+C encerra cada servidor. Para parar o banco:
+Para encerrar, use `Ctrl+C` nos terminais dos servidores e execute:
 
 ```powershell
 ./scripts/Stop-Database.ps1
 ```
 
-## Banco existente
+<details>
+<summary><strong>Utilizando um PostgreSQL já configurado</strong></summary>
 
-Crie um banco vazio e aplique a migração com uma conta responsável pelo esquema:
+Nesse caso, crie um banco vazio e aplique a migração com uma conta responsável pelo esquema:
 
 ```powershell
 psql -h localhost -U SEU_USUARIO -d habit_tracker -v ON_ERROR_STOP=1 -f database/migrations/001_initial_schema.sql
 ```
 
-Não reaplique a migração sobre tabelas existentes. Ela é transacional e não é
-executada automaticamente pelo servidor Java. Para o acesso da aplicação, use uma
-conta separada sem permissões de criar bancos, alterar o esquema ou administrar roles.
+Configure uma conta de aplicação com permissões de leitura e escrita nas tabelas e uso das sequências. Ela não precisa de privilégios para administrar o banco ou alterar o esquema.
 
-Defina as variáveis antes de iniciar a API:
+Defina a conexão e inicie o backend:
 
 ```powershell
 $env:DB_URL = 'jdbc:postgresql://localhost:5432/habit_tracker'
@@ -79,132 +131,99 @@ $env:DB_PASSWORD = $dbCredential.GetNetworkCredential().Password
 ./scripts/Start-Backend.ps1
 ```
 
-backend/.env.example documenta as variáveis. Arquivos .env não são carregados pelo Java.
+A migração deve ser aplicada uma única vez em um banco vazio. O servidor Java não executa migrações automaticamente.
 
-## Funcionalidades e regras
+</details>
 
-- Hábitos diários com início e fim inclusivos; continuam entre os meses até a data final.
-- Grade com a quantidade real de dias do mês, incluindo anos bissextos.
-- Uma marcação por hábito e dia: concluído ou não realizado. Ausência significa sem registro.
-- Datas futuras e dias fora do período do hábito não aceitam marcação.
-- Alterar um período deixando registros fora dele retorna conflito, sem apagar o histórico.
-- Renomear altera o nome em todo o histórico. Excluir remove o hábito e suas marcações.
-- Ordenação manual das linhas; hábitos fora da lista mantêm sua ordem relativa após ela.
-- Um humor opcional por dia, entre 1 (muito mal) e 5 (muito bem), independente dos hábitos.
-- O gráfico deixa lacunas nos dias sem humor registrado.
-- Progresso considera os dias previstos já decorridos, incluindo hoje e dias sem registro.
-- Sem dias elegíveis, o progresso aparece como um traço.
-- Hoje é calculado no backend pelo fuso registrado no cadastro.
-- Cada usuário acessa apenas os próprios dados.
+### Configuração
 
-## Testes
+| Variável | Descrição | Padrão |
+| --- | --- | --- |
+| `DB_URL` | URL JDBC do PostgreSQL | Obrigatória |
+| `DB_USER` | Usuário da aplicação no banco | Obrigatória |
+| `DB_PASSWORD` | Senha do banco | Obrigatória |
+| `APP_PORT` | Porta da API | `8080` |
+| `APP_ORIGIN` | Origem permitida para as requisições | `http://localhost:5173` |
+| `COOKIE_SECURE` | Envio de cookies apenas por HTTPS | Ativado por padrão para origens HTTPS |
 
-Com Maven no PATH:
+O arquivo [`backend/.env.example`](backend/.env.example) documenta a configuração. O Java lê variáveis de ambiente; arquivos `.env` não são carregados automaticamente. Credenciais, dados locais e arquivos gerados ficam fora do versionamento.
+
+## Estrutura do projeto
+
+```text
+Habit Tracker/
+├── backend/
+│   └── src/
+│       ├── main/java/br/com/habittracker/
+│       │   ├── config/       # Configuração por variáveis de ambiente
+│       │   ├── database/     # Conexões JDBC
+│       │   ├── domain/       # Regras de datas e progresso
+│       │   ├── http/         # Rotas e respostas da API
+│       │   └── security/     # Senhas, sessões e limites de autenticação
+│       └── test/            # Testes Java
+├── frontend/
+│   └── src/
+│       ├── components/      # Login, tabela, gráfico e formulários
+│       ├── api.js           # Cliente HTTP
+│       ├── calendar.js      # Datas e níveis de humor
+│       ├── fonts.css        # Fontes locais
+│       └── styles.css       # Paleta e layout
+├── database/migrations/     # Esquema PostgreSQL
+└── scripts/                 # Execução local e testes HTTP
+```
+
+## Testes e build
+
+**Backend:**
 
 ```powershell
 mvn -f backend/pom.xml test
 ```
 
-Com banco e API em execução, no terminal em que DB_* está definido:
+**Frontend:**
+
+```powershell
+cd frontend
+pnpm test
+pnpm format:check
+pnpm build
+```
+
+Os mesmos scripts podem ser executados com `npm test` e `npm run <script>`.
+
+**Integração e segurança da API**, a partir da raiz, com banco e backend em execução:
 
 ```powershell
 ./scripts/Test-Api.ps1
 ./scripts/Test-Security.ps1
 ```
 
-Os testes HTTP criam contas temporárias e as removem ao final quando DB_* está
-configurado. Execute-os no banco de desenvolvimento. Repetições em sequência podem
-atingir os limites de autenticação; nesse caso, aguarde a janela de 15 minutos.
-
-No frontend:
-
-```powershell
-cd frontend
-npm test
-npm run format:check
-npm run build
-```
-
-A revisão e seus limites estão documentados em [SECURITY.md](SECURITY.md).
+Os testes HTTP utilizam contas temporárias. Mantenha as variáveis `DB_*` definidas no terminal para permitir a limpeza dessas contas ao final. Execute os testes no banco de desenvolvimento; repetições em sequência podem atingir o limite de autenticação de 15 minutos.
 
 ## API
 
-Prefixo /api. Corpos em JSON; datas em YYYY-MM-DD. Erros contêm code e message.
+Prefixo: `/api`. As requisições e respostas utilizam JSON; as datas seguem `YYYY-MM-DD`.
 
-| Método | Rota | Função |
-|---|---|---|
-| GET | /health | Conexão com o banco; resultado em cache por 2 segundos |
-| POST | /auth/register | name, email, password e timezone |
-| POST | /auth/login | email e password |
-| POST | /auth/logout | Encerrar sessão; pode ser repetido |
-| GET | /auth/me | Usuário autenticado |
-| GET | /tracker?year=2026&month=10 | Dados e resumo do mês |
-| POST | /habits | name e startDate |
-| PATCH | /habits/{id} | name, startDate ou endDate; null reabre o período |
-| PUT | /habits/order | ids em ordem |
-| DELETE | /habits/{id} | Excluir hábito e registros |
-| PUT | /habits/{id}/entries/{date} | status: COMPLETED ou NOT_COMPLETED |
-| DELETE | /habits/{id}/entries/{date} | Limpar marcação |
-| PUT | /moods/{date} | level: 1 a 5 |
-| DELETE | /moods/{date} | Limpar humor |
+| Recurso | Rotas principais |
+| --- | --- |
+| Autenticação | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` |
+| Consulta mensal | `GET /tracker?year=2026&month=10` |
+| Hábitos | `POST /habits`, `PATCH /habits/{id}`, `DELETE /habits/{id}` |
+| Ordenação | `PUT /habits/order` |
+| Marcações | `PUT` e `DELETE /habits/{id}/entries/{date}` |
+| Humor | `PUT` e `DELETE /moods/{date}` |
+| Diagnóstico | `GET /health` |
 
-Novas senhas exigem 15 a 128 caracteres. Contas criadas anteriormente com senhas de
-8 a 14 caracteres continuam podendo entrar. Não há recuperação de senha nesta versão.
-Sessões duram 7 dias, com no máximo 10 sessões por conta.
+As rotas de hábitos, marcações, humor e consulta mensal exigem uma sessão autenticada. Respostas de erro incluem `code` e `message`.
 
-## Organização
+## Segurança e estado do projeto
 
-```text
-backend/src/main/java/br/com/habittracker/
-  config/       # variáveis de ambiente
-  database/     # conexões JDBC e limites de consultas
-  domain/       # regras de datas e progresso
-  security/     # senhas, cookies, origem e limites de autenticação
-  http/         # rotas, transações e respostas
-frontend/src/
-  App.jsx       # verificação da sessão
-  api.js        # cliente HTTP e tratamento de falhas
-  calendar.js   # datas e níveis de humor
-  components/   # login, tabela, resumo, gráfico e formulários
-  fonts.css     # fontes latinas locais
-  styles.css    # tokens visuais e layout
-database/migrations/
-scripts/
-```
+O MVP está funcional para uso local. A aplicação utiliza senhas com hash e salt individual, cookies HttpOnly e SameSite, validação de origem, limites de autenticação e consultas SQL parametrizadas. O build do frontend inclui uma Content Security Policy.
 
-As consultas SQL são parametrizadas. Mutações de hábitos bloqueiam o usuário e o
-hábito sempre na mesma ordem. A leitura mensal usa um snapshot consistente.
+Hospedagem pública exige HTTPS, configuração de proxy e adequação dos limites para o ambiente de implantação. Recuperação de senha e confirmação de email ainda não estão implementadas. Os controles e os limites da revisão estão documentados em [`SECURITY.md`](SECURITY.md).
 
-## Design
+## Identidade visual
 
-Papel quente, vinho e mostarda. Fraunces nos títulos, Manrope nos textos e IBM Plex
-Mono nos dias e números. As cores ficam em frontend/src/styles.css. As fontes são
-servidas localmente, com licenças OFL em frontend/public/fonts/licenses. A bonfire é
-um SVG próprio simplificado a partir da referência fornecida para o projeto.
+A interface combina fundo de papel quente, vinho e mostarda com **Fraunces** nos títulos, **Manrope** nos textos e **IBM Plex Mono** nos números. A bonfire é um SVG simplificado inspirado na referência de Dark Souls.
 
-## Antes de hospedar
-
-O ambiente atual é local. Para hospedar, use HTTPS e um proxy que sirva frontend e
-/api na mesma origem. Defina APP_ORIGIN para a origem real, sem barra final; cookies
-Secure são obrigatórios quando essa origem usa HTTPS. A API rejeita configuração
-HTTP fora de localhost. A origem padrão é http://localhost:5173.
-
-O build inclui CSP que permite scripts e fontes da própria origem. Configure também
-no proxy frame-ancestors 'none', X-Content-Type-Options: nosniff e Referrer-Policy:
-no-referrer. Estilos inline são permitidos para as medidas dinâmicas da tabela.
-
-Os limites de autenticação são locais a uma instância e reiniciam com o processo.
-Uma hospedagem com várias instâncias precisa de controle compartilhado no proxy ou
-banco. Recuperação de senha, confirmação de email, backups e operação de produção
-ficam fora desta versão.
-
-## Nome da pasta
-
-Para renomear para Habit Tracker, pare os servidores e o banco, feche os programas
-que usam a pasta e execute no diretório pai:
-
-```powershell
-Rename-Item -LiteralPath '.\todo list' -NewName 'Habit Tracker'
-```
-
-Abra a nova pasta no editor. Os scripts calculam os caminhos a partir da raiz do projeto.
+As fontes são servidas localmente. Suas licenças OFL estão em [`frontend/public/fonts/licenses`](frontend/public/fonts/licenses).
