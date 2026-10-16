@@ -46,4 +46,20 @@ class AppConfigTest {
         env.put("PORT", "bad");
         assertThrows(IllegalArgumentException.class, () -> AppConfig.fromEnvironment(env));
     }
+
+    @Test void diagnosticsNeverIncludeCredentialsOrQueryValues() {
+        Map<String, String> env = local();
+        env.put("DB_URL", "jdbc:postgresql://private-user:private-password@example.com/neondb?password=private-query-password");
+        env.put("DB_USER", "private-role");
+        env.put("DB_PASSWORD", "'private-password' ");
+        String diagnostic = AppConfig.fromEnvironment(env).databaseDiagnostics(env);
+        assertTrue(diagnostic.contains("origem=DB_*; host=example.com; banco=neondb"));
+        assertTrue(diagnostic.contains("credenciais_na_url=true"));
+        assertTrue(diagnostic.contains("senha_espacos_ou_aspas=true"));
+        assertFalse(diagnostic.contains("private-"));
+        env.put("DATABASE_URL", "postgresql://private-user:private-password@example.com/neondb");
+        String uriDiagnostic = AppConfig.fromEnvironment(env).databaseDiagnostics(env);
+        assertTrue(uriDiagnostic.contains("origem=DATABASE_URL"));
+        assertFalse(uriDiagnostic.contains("private-"));
+    }
 }

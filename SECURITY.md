@@ -45,8 +45,11 @@ o formatador, o build React e os testes HTTP de integração e segurança passar
 O Chrome validou o build servido pelo Java com PostgreSQL local, incluindo hábito,
 marcação, humor, persistência, logout/login, fontes locais e CSP.
 
-A imagem Docker não foi construída localmente porque o Docker não estava instalado.
-O primeiro build no Render ainda precisa confirmar o empacotamento no ambiente Linux.
+A imagem Docker foi construída no Render em 16 de outubro, com os 17 testes Java
+aprovados no Linux, incluindo o teste de symlink. A interface respondeu por HTTPS;
+a conexão pública com o Neon ainda está em diagnóstico. O log de configuração
+registra apenas origem, host, banco e indicadores de espaços ou aspas nas extremidades
+das credenciais. Não registra usuário, senha ou a URL completa.
 
 ## Referências das correções
 

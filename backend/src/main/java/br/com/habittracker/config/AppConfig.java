@@ -63,6 +63,39 @@ public record AppConfig(int port, String host, String databaseUrl, String databa
         return "AppConfig[port=" + port + ", databaseCredentials=REDACTED]";
     }
 
+    /** Metadados para diagnóstico; nunca inclui credenciais ou a URL completa. */
+    public String databaseDiagnostics(Map<String, String> environment) {
+        String databaseHost = "indisponivel";
+        String databaseName = "indisponivel";
+        boolean credentialsInUrl = false;
+        try {
+            URI uri = URI.create(databaseUrl.substring("jdbc:".length()));
+            if (uri.getHost() != null) databaseHost = uri.getHost();
+            if (uri.getPath() != null && uri.getPath().matches("/[A-Za-z0-9_-]+")) {
+                databaseName = uri.getPath().substring(1);
+            }
+            credentialsInUrl = uri.getRawUserInfo() != null;
+            if (uri.getRawQuery() != null) {
+                for (String item : uri.getRawQuery().split("&")) {
+                    String key = java.net.URLDecoder.decode(item.split("=", 2)[0], java.nio.charset.StandardCharsets.UTF_8);
+                    if (key.equals("user") || key.equals("password")) credentialsInUrl = true;
+                }
+            }
+        } catch (IllegalArgumentException | IndexOutOfBoundsException ignored) {
+            // Não imprimir a exceção: uma URL inválida pode conter uma senha.
+        }
+        return "PostgreSQL: origem=" + (environment.containsKey("DATABASE_URL") ? "DATABASE_URL" : "DB_*")
+                + "; host=" + databaseHost + "; banco=" + databaseName
+                + "; credenciais_na_url=" + credentialsInUrl
+                + "; usuario_espacos_ou_aspas=" + hasBoundaryCharacters(databaseUser)
+                + "; senha_espacos_ou_aspas=" + hasBoundaryCharacters(databasePassword);
+    }
+
+    private static boolean hasBoundaryCharacters(String value) {
+        return !value.equals(value.strip()) || value.startsWith("'") || value.endsWith("'")
+                || value.startsWith("\"") || value.endsWith("\"");
+    }
+
     private static String required(Map<String, String> environment, String name) {
         String value = environment.get(name);
         if (value == null || value.isBlank()) {

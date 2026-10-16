@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 public final class Main {
     public static void main(String[] args) throws IOException {
         AppConfig config = AppConfig.fromEnvironment();
+        System.out.println(config.databaseDiagnostics(System.getenv()));
         // Limites do próprio HttpServer, inclusive para conexões que ainda não chegaram ao handler.
         System.setProperty("jdk.httpserver.maxConnections", "128");
         System.setProperty("sun.net.httpserver.maxReqHeaders", "50");

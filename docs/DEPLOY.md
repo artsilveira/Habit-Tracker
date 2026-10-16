@@ -43,11 +43,25 @@ Com as alterações deste projeto publicadas na branch `main`:
 3. Preencha `DATABASE_URL` com a URI privada da etapa anterior e aplique o Blueprint.
 4. Aguarde o build e a implantação. A URL pública será exibida pelo Render, no formato `https://NOME.onrender.com`.
 
+Se o serviço já foi criado pela integração do Render, use **Associate existing services** ao configurar o Blueprint. Isso associa a configuração ao serviço existente. Não é necessário criar um segundo serviço.
+
 Também é possível iniciar pelo botão [Deploy to Render](https://render.com/deploy?repo=https://github.com/artsilveira/Habit-Tracker).
 
 O Render injeta `PORT` e `RENDER_EXTERNAL_URL`. O contêiner escuta em `0.0.0.0`, e a aplicação usa a URL HTTPS informada pela plataforma como origem permitida. `COOKIE_SECURE=true` já está no Blueprint. Não copie a configuração local `APP_ORIGIN=http://localhost:5173` para o serviço publicado.
 
 Se usar um domínio próprio, configure `APP_ORIGIN` com a origem HTTPS exata, sem caminho nem barra final, e use esse domínio para acessar a aplicação.
+
+### Alternativa: conexão em variáveis separadas
+
+Também é possível configurar `DB_URL`, `DB_USER` e `DB_PASSWORD` diretamente em **Environment**. Nesse caso, remova `DATABASE_URL`, pois ela tem prioridade.
+
+- `DB_URL`: `jdbc:postgresql://HOST_DIRETO_DO_NEON/neondb?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory`
+- `DB_USER`: `habit_tracker_app`
+- `DB_PASSWORD`: somente a senha definida no SQL, sem as aspas usadas pelo comando.
+
+Não é preciso codificar os caracteres da senha quando ela é informada em `DB_PASSWORD`. Salve as alterações com deploy para o processo receber os novos valores.
+
+O log de inicialização mostra a origem da configuração, o host e o banco, e sinaliza espaços ou aspas nas extremidades das credenciais. Não mostra usuário, senha, parâmetros da URL ou a URL completa. O código `28P01` indica rejeição da autenticação; confira também a branch, o login da role e o roteamento antes de concluir que é necessário redefinir a senha.
 
 O esquema SQL não é aplicado durante o build ou a inicialização. Isso evita alterações automáticas no banco a cada deploy. Migrações futuras precisam ser executadas conscientemente com a conta proprietária; novas tabelas também precisam dos grants da conta da aplicação.
 
