@@ -17,8 +17,8 @@ public final class Database {
         Properties properties = new Properties();
         properties.setProperty("user", config.databaseUser());
         properties.setProperty("password", config.databasePassword());
-        properties.setProperty("connectTimeout", "3");
-        properties.setProperty("socketTimeout", "5");
+        properties.setProperty("connectTimeout", "10");
+        properties.setProperty("socketTimeout", "15");
         properties.setProperty("options", "-c statement_timeout=5000 -c lock_timeout=2000 -c idle_in_transaction_session_timeout=10000");
         return DriverManager.getConnection(config.databaseUrl(), properties);
     }

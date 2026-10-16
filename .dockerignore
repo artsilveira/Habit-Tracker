@@ -1,0 +1,14 @@
+.git
+.tools
+**/node_modules
+**/target
+frontend/dist
+**/.env
+**/.env.*
+**/*.log
+**/*.pem
+**/*.key
+**/*.p12
+**/*.jks
+.idea
+.vscode

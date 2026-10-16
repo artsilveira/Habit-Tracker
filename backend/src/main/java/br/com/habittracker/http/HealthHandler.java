@@ -19,13 +19,19 @@ public final class HealthHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try (exchange) {
-            if (!exchange.getRequestURI().getPath().equals("/api/health")) {
+            String path = exchange.getRequestURI().getPath();
+            if (!path.equals("/api/health") && !path.equals("/api/health/live")) {
                 respond(exchange, 404, "{\"code\":\"NOT_FOUND\"}");
                 return;
             }
             if (!exchange.getRequestMethod().equals("GET")) {
                 exchange.getResponseHeaders().set("Allow", "GET");
                 respond(exchange, 405, "{\"code\":\"METHOD_NOT_ALLOWED\"}");
+                return;
+            }
+            // Sondagens da plataforma não consultam o Neon nem impedem que ele durma.
+            if (path.equals("/api/health/live")) {
+                respond(exchange, 200, "{\"status\":\"UP\"}");
                 return;
             }
             boolean available = databaseAvailable();

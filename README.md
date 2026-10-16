@@ -33,6 +33,7 @@ O projeto reúne **React, Tailwind CSS, Java sem framework e PostgreSQL**, com u
 | Testes | JUnit 5, Node.js Test Runner e testes HTTP em PowerShell |
 | Ferramentas | Maven, pnpm e Prettier |
 | Interface | Lucide React, SVG e fontes locais via Fontsource |
+| Deploy | Docker, Render e PostgreSQL no Neon |
 
 ### Java sem framework
 
@@ -139,14 +140,23 @@ A migração deve ser aplicada uma única vez em um banco vazio. O servidor Java
 
 | Variável | Descrição | Padrão |
 | --- | --- | --- |
-| `DB_URL` | URL JDBC do PostgreSQL | Obrigatória |
-| `DB_USER` | Usuário da aplicação no banco | Obrigatória |
-| `DB_PASSWORD` | Senha do banco | Obrigatória |
-| `APP_PORT` | Porta da API | `8080` |
-| `APP_ORIGIN` | Origem permitida para as requisições | `http://localhost:5173` |
+| `DATABASE_URL` | URI PostgreSQL do Neon; tem precedência sobre `DB_*` e exige TLS com certificado validado | Opcional |
+| `DB_URL` | URL JDBC do PostgreSQL local | Obrigatória sem `DATABASE_URL` |
+| `DB_USER` | Usuário da aplicação no banco | Obrigatória sem `DATABASE_URL` |
+| `DB_PASSWORD` | Senha do banco | Obrigatória sem `DATABASE_URL` |
+| `APP_PORT` / `PORT` | Porta HTTP; `APP_PORT` tem precedência | `8080` |
+| `APP_HOST` | Endereço de escuta | `127.0.0.1`; `0.0.0.0` no Docker |
+| `FRONTEND_DIR` | Diretório do build React servido pelo Java | Opcional; `/app/public` no Docker |
+| `APP_ORIGIN` | Origem permitida para as requisições | `RENDER_EXTERNAL_URL` no Render; `http://localhost:5173` localmente |
 | `COOKIE_SECURE` | Envio de cookies apenas por HTTPS | Ativado por padrão para origens HTTPS |
 
 O arquivo [`backend/.env.example`](backend/.env.example) documenta a configuração. O Java lê variáveis de ambiente; arquivos `.env` não são carregados automaticamente. Credenciais, dados locais e arquivos gerados ficam fora do versionamento.
+
+## Deploy gratuito
+
+O [`Dockerfile`](Dockerfile) compila frontend e backend e os executa em um único serviço, com usuário sem privilégios administrativos. O [`render.yaml`](render.yaml) configura um Web Service gratuito no Render, conectado a um banco externo no Neon.
+
+O passo a passo para criar o banco, aplicar a migração, configurar a conta da aplicação e publicar está em **[docs/DEPLOY.md](docs/DEPLOY.md)**. As credenciais são informadas nas variáveis privadas do Render. O serviço gratuito pode suspender por inatividade e demora para responder na primeira visita; consulte os limites no guia.
 
 ## Estrutura do projeto
 
@@ -212,15 +222,15 @@ Prefixo: `/api`. As requisições e respostas utilizam JSON; as datas seguem `YY
 | Ordenação | `PUT /habits/order` |
 | Marcações | `PUT` e `DELETE /habits/{id}/entries/{date}` |
 | Humor | `PUT` e `DELETE /moods/{date}` |
-| Diagnóstico | `GET /health` |
+| Diagnóstico | `GET /health` (com banco), `GET /health/live` (somente processo) |
 
 As rotas de hábitos, marcações, humor e consulta mensal exigem uma sessão autenticada. Respostas de erro incluem `code` e `message`.
 
 ## Segurança e estado do projeto
 
-O MVP está funcional para uso local. A aplicação utiliza senhas com hash e salt individual, cookies HttpOnly e SameSite, validação de origem, limites de autenticação e consultas SQL parametrizadas. O build do frontend inclui uma Content Security Policy.
+O MVP permite acompanhar hábitos e humor com contas separadas. A aplicação utiliza senhas com hash e salt individual, cookies HttpOnly e SameSite, validação de origem, limites de autenticação e consultas SQL parametrizadas. O servidor dos arquivos de produção aplica uma Content Security Policy e bloqueia caminhos fora do build.
 
-Hospedagem pública exige HTTPS, configuração de proxy e adequação dos limites para o ambiente de implantação. Recuperação de senha e confirmação de email ainda não estão implementadas. Os controles e os limites da revisão estão documentados em [`SECURITY.md`](SECURITY.md).
+A configuração do Render exige HTTPS e cookies seguros. Os limites de autenticação no Render são globais por instância e por conta, sem confiar em cabeçalhos de IP do visitante. Recuperação de senha, confirmação de email e limites compartilhados entre instâncias ainda não estão implementados. Os controles e os limites da revisão estão documentados em [`SECURITY.md`](SECURITY.md).
 
 ## Identidade visual
 

@@ -1,6 +1,6 @@
 # Revisão de segurança
 
-Revisão de 15 de outubro de 2026. Escopo: código local, dependências, API com
+Revisão de 15 de outubro de 2026, com preparação de deploy em 16 de outubro de 2026. Escopo: código local, dependências, API com
 PostgreSQL e interface no Chrome. Não foi realizado teste contra uma hospedagem pública.
 
 ## Correções aplicadas
@@ -27,7 +27,7 @@ Sec-Fetch-Site cross-site. Não há tokens no localStorage.
 
 ## Verificações
 
-- 8 testes Java: datas, anos bissextos, senhas, limites e configuração dos cookies.
+- Testes Java: datas, anos bissextos, senhas, limites e configuração dos cookies.
 - 5 testes do cliente HTTP: credenciais, respostas inválidas, status, timeout e cancelamento.
 - Testes da API: isolamento entre contas, marcação única, datas, período, ordem, humor, histórico e exclusão.
 - Testes de segurança: CSRF, cookies, JSON, tamanho do corpo, senha, SQL como texto literal e bloqueio de tentativas.
@@ -36,6 +36,17 @@ Sec-Fetch-Site cross-site. Não há tokens no localStorage.
 - Build de produção carregado no Chrome sem violações de CSP, com as três fontes locais.
 - Auditoria pnpm: nenhum aviso conhecido retornado para o lockfile revisado.
 - Consulta OSV das 5 dependências Java de execução atualizadas: nenhum aviso retornado.
+
+Na preparação de deploy de 16 de outubro, o Maven executou 17 testes: 16 passaram
+e um teste de symlink foi pulado por restrição do Windows. A suíte cobre também
+arquivos estáticos, travessia de diretórios, configuração da URI do Neon, origem do
+Render, limites atrás de proxy e liveness sem banco. Os 5 testes do cliente HTTP,
+o formatador, o build React e os testes HTTP de integração e segurança passaram.
+O Chrome validou o build servido pelo Java com PostgreSQL local, incluindo hábito,
+marcação, humor, persistência, logout/login, fontes locais e CSP.
+
+A imagem Docker não foi construída localmente porque o Docker não estava instalado.
+O primeiro build no Render ainda precisa confirmar o empacotamento no ambiente Linux.
 
 ## Referências das correções
 
@@ -52,17 +63,26 @@ Os controles de autenticação consideram o
 ## Limites desta revisão
 
 Ausência de avisos em scanners não garante ausência de vulnerabilidades. Os limites
-de tentativas estão na memória de uma instância, reiniciam com o processo e usam o IP
-da conexão, sem confiar em X-Forwarded-For. Atrás de um proxy, o limite por IP pode
-agrupar usuários; uma implantação pública precisa de limitação compartilhada no proxy
-ou banco e de uma configuração explícita de proxies confiáveis.
+de tentativas estão na memória de uma instância e reiniciam com o processo. Localmente
+usam o IP da conexão e o hash do email. No Render, usam uma cota global por instância
+(30 cadastros ou 120 logins a cada 15 minutos) e 10 tentativas por conta no mesmo período.
+Não confiam em X-Forwarded-For. Um visitante pode consumir a cota compartilhada;
+uso com mais tráfego exige limitação de abuso compartilhada no proxy ou banco.
 
-HTTPS, proxy, backups, recuperação de senha, confirmação de email e várias instâncias
-não foram validados como uma implantação de produção. A conta administrativa do
+HTTPS público, proxy, backups e várias instâncias não foram validados em uma
+hospedagem pública. Recuperação de senha e confirmação de email não estão implementadas. A conta administrativa do
 cluster local é exclusiva do script de preparação; ela não deve ser usada pela API.
 
-O build aplica CSP com scripts, fontes e conexões da própria origem. Estilos inline
-são permitidos para as medidas dinâmicas da grade. frame-ancestors e outros cabeçalhos
-precisam acompanhar os arquivos no servidor definitivo, como descrito no README.
+O servidor Java de arquivos estáticos aplica CSP com scripts, fontes e conexões da
+própria origem, frame-ancestors 'none', X-Frame-Options e nosniff. Estilos inline são
+permitidos para as medidas dinâmicas da grade. O handler serve apenas o diretório
+do build e rejeita travessia de diretórios, arquivos ocultos e symlinks externos.
 
-A revisão foi concluída antes do primeiro commit.
+A configuração DATABASE_URL do Neon exige TLS com certificado e hostname validados
+pelo pgJDBC e separa a senha da URL JDBC. Erros de configuração não exibem a URI
+com credenciais. O contêiner roda com UID sem privilégios administrativos; arquivos
+locais de credenciais não entram no contexto de build. A conta SQL do Neon deve
+ser criada sem privilégios administrativos conforme o [guia de deploy](docs/DEPLOY.md).
+
+A sondagem /api/health/live não consulta o banco; /api/health é a verificação de
+conectividade. Um processo saudável não garante que a migração ou a conexão estejam corretas.

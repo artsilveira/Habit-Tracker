@@ -9,9 +9,14 @@ import java.util.Set;
 public final class RequestSecurity {
     private final String origin;
     private final boolean secureCookies;
+    private final boolean behindProxy;
     private final RateLimiter limiter = new RateLimiter(Clock.systemUTC(), 4096);
 
     public RequestSecurity(String origin, boolean secureCookies) {
+        this(origin, secureCookies, false);
+    }
+
+    public RequestSecurity(String origin, boolean secureCookies, boolean behindProxy) {
         URI uri = URI.create(origin);
         if (!Set.of("http", "https").contains(uri.getScheme()) || uri.getHost() == null
                 || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null
@@ -26,13 +31,21 @@ public final class RequestSecurity {
         }
         this.origin = origin;
         this.secureCookies = secureCookies;
+        this.behindProxy = behindProxy;
     }
 
     public static RequestSecurity fromEnvironment() {
-        String origin = System.getenv().getOrDefault("APP_ORIGIN", "http://localhost:5173");
-        String secure = System.getenv().getOrDefault("COOKIE_SECURE", String.valueOf(origin.startsWith("https://")));
+        return fromEnvironment(System.getenv());
+    }
+
+    public static RequestSecurity fromEnvironment(java.util.Map<String, String> environment) {
+        boolean render = "true".equals(environment.get("RENDER"));
+        String origin = environment.getOrDefault("APP_ORIGIN",
+                environment.getOrDefault("RENDER_EXTERNAL_URL", "http://localhost:5173"));
+        if (render && !origin.startsWith("https://")) throw new IllegalArgumentException("O deploy no Render exige origem HTTPS.");
+        String secure = environment.getOrDefault("COOKIE_SECURE", String.valueOf(origin.startsWith("https://")));
         if (!secure.equals("true") && !secure.equals("false")) throw new IllegalArgumentException("COOKIE_SECURE deve ser true ou false.");
-        return new RequestSecurity(origin, Boolean.parseBoolean(secure));
+        return new RequestSecurity(origin, Boolean.parseBoolean(secure), render);
     }
 
     public boolean allows(HttpExchange exchange) {
@@ -43,9 +56,12 @@ public final class RequestSecurity {
     }
 
     public long limitAuth(String ip, String accountHash, boolean register) {
-        // Nunca confiar em X-Forwarded-For fornecido pelo cliente.
-        long ipWait = limiter.retryAfter((register ? "register:" : "login:") + ip,
-                register ? 10 : 30, Duration.ofMinutes(15));
+        // No Render o IP do socket é do proxy. Usar limites globais + por conta,
+        // sem confiar em cabeçalhos que o visitante poderia forjar.
+        String key = behindProxy ? "global" : ip;
+        int limit = behindProxy ? (register ? 30 : 120) : (register ? 10 : 30);
+        long ipWait = limiter.retryAfter((register ? "register:" : "login:") + key,
+                limit, Duration.ofMinutes(15));
         if (ipWait > 0) return ipWait;
         return limiter.retryAfter("account:" + accountHash, 10, Duration.ofMinutes(15));
     }

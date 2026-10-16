@@ -1,7 +1,7 @@
 export async function api(path, { method = 'GET', body, signal } = {}) {
   let response;
   try {
-    const timeout = AbortSignal.timeout(15_000);
+    const timeout = AbortSignal.timeout(25_000);
     response = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
