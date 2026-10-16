@@ -152,6 +152,10 @@ public final class ApiHandler implements HttpHandler {
                     if (r.next()) { u = user(r); hash = r.getString("password_hash"); }
                 }
             }
+            // Encerrar a leitura antes do PBKDF2: em CPUs limitadas, o cálculo pode
+            // ultrapassar idle_in_transaction_session_timeout. A sessão será
+            // gravada em uma nova transação somente após a senha ser validada.
+            c.commit();
             if (!Passwords.verify(password, hash)) throw new ApiError(401, "INVALID_CREDENTIALS", "Email ou senha incorretos.");
             createSession(x, c, u.id, request);
             return u;

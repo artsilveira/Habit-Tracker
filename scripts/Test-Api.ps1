@@ -18,6 +18,9 @@ $yesterday = ([DateTime]::Parse($today)).AddDays(-1).ToString('yyyy-MM-dd')
 $tomorrow = ([DateTime]::Parse($today)).AddDays(1).ToString('yyyy-MM-dd')
 try {
     Request GET /auth/me $null $sessionA 401 | Out-Null
+    # Primeiro login com email ainda inexistente também deve verificar a senha e
+    # retornar 401, inclusive com limite curto para transações ociosas no banco.
+    Request POST /auth/login @{ email=$testEmailA; password='dummy-password-for-timing-only' } $sessionA 401 | Out-Null
     Request POST /auth/register @{ name='Teste A'; email=$testEmailA; password=$password; timezone='America/Sao_Paulo' } $sessionA | Out-Null
     Request POST /auth/register @{ name='Teste B'; email=$testEmailB; password=$password; timezone='America/Sao_Paulo' } $sessionB | Out-Null
     Request POST /auth/register @{ name='Duplicado'; email=$testEmailA; password=$password; timezone='America/Sao_Paulo' } $sessionB 409 | Out-Null

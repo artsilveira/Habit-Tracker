@@ -9,8 +9,9 @@ import javax.crypto.spec.PBEKeySpec;
 public final class Passwords {
     private static final int ITERATIONS = 600_000;
     private static final SecureRandom RANDOM = new SecureRandom();
-    // Equal work for an unknown email and a known email with a wrong password.
-    private static final String DUMMY = hash("dummy-password-for-timing-only");
+    // Hash fictício pré-calculado: emails desconhecidos também executam PBKDF2,
+    // sem um segundo cálculo na primeira requisição. Nunca representa uma conta.
+    private static final String DUMMY = "pbkdf2-sha256$600000$Oy03RyDL78uCr/bxaKgH7w==$ZNk/09KTdP74+leLicPpWbUlqo4G7ddaLvwFDbiZDNQ=";
 
     private Passwords() {}
 

@@ -2,6 +2,8 @@
 
 **BRICK BY BRICK, DAY BY DAY.**
 
+**[Acessar a aplicação](https://habit-tracker-mbfr.onrender.com)** · Render Free + Neon
+
 Aplicação full stack para acompanhar hábitos e registrar o humor ao longo do mês. A ideia nasceu de um habit tracker físico: cada linha representa um hábito, cada coluna representa um dia, e um gráfico abaixo da tabela mostra os registros de humor.
 
 O projeto reúne **React, Tailwind CSS, Java sem framework e PostgreSQL**, com uma identidade visual inspirada em papel, tons de vinho e mostarda e um ícone de bonfire.

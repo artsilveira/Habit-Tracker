@@ -46,10 +46,15 @@ O Chrome validou o build servido pelo Java com PostgreSQL local, incluindo hábi
 marcação, humor, persistência, logout/login, fontes locais e CSP.
 
 A imagem Docker foi construída no Render em 16 de outubro, com os 17 testes Java
-aprovados no Linux, incluindo o teste de symlink. A interface respondeu por HTTPS;
-a conexão pública com o Neon ainda está em diagnóstico. O log de configuração
+aprovados no Linux, incluindo o teste de symlink. A interface respondeu por HTTPS
+e a conectividade pública com o Neon foi confirmada. O log de configuração
 registra apenas origem, host, banco e indicadores de espaços ou aspas nas extremidades
 das credenciais. Não registra usuário, senha ou a URL completa.
+
+O login encerra a transação de leitura antes de verificar a senha com PBKDF2,
+preservando o limite de transações ociosas mesmo em CPUs limitadas. O hash fictício
+para emails desconhecidos é pré-calculado; cada verificação continua usando
+600 mil iterações. A criação da sessão ocorre somente após autenticação válida.
 
 ## Referências das correções
 
